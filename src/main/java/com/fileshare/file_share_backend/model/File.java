@@ -2,9 +2,6 @@ package com.fileshare.file_share_backend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import org.hibernate.annotations.GenericGenerator;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @Table
@@ -25,6 +22,9 @@ public class File {
     @Column(columnDefinition = "int default 0")
     private int downloaded;
     private Long fileSize;
+    private String emailId;
+    private boolean isEmailSend;
+    private String senderName;
 
     public File() {
     }
@@ -39,6 +39,30 @@ public class File {
         this.fileUrl = fileUrl;
         this.uploadTime = uploadTime;
         this.maxDownloads = maxDownloads;
+    }
+
+    public String getSenderName() {
+        return senderName;
+    }
+
+    public void setSenderName(String senderName) {
+        this.senderName = senderName;
+    }
+
+    public boolean getIsEmailSend() {
+        return isEmailSend;
+    }
+
+    public void setIsEmailSend(boolean isEmailSend) {
+        this.isEmailSend = isEmailSend;
+    }
+
+    public String getEmailId() {
+        return emailId;
+    }
+
+    public void setEmailId(String emailId) {
+        this.emailId = emailId;
     }
 
     public String getPublicId() {

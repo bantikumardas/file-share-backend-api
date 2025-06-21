@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,6 +22,9 @@ public class FileService {
 
     @Autowired
     private FileRepo fileRepo;
+
+    @Autowired
+    private EmailService emailService;
 
 
     public ResponseEntity<?> uploadFile(File file, MultipartFile multipartFile) {
@@ -51,6 +53,14 @@ public class FileService {
             String url=saveFile(multipartFile, uuid);
             file.setFileUrl(url);
             System.out.println("The URL Is "+url);
+            if(file.getEmailId()!=null){
+                boolean isEmailSend=emailService.sendEmail(file);
+                if(!isEmailSend){
+                    response.put("error", "Email sending is failed.");
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+                }
+                file.setIsEmailSend(isEmailSend);
+            }
             fileRepo.save(file);
             return ResponseEntity.status(HttpStatus.OK).body(fileRepo.findById(file.getId()));
         }catch (Exception e){
@@ -79,7 +89,7 @@ public class FileService {
 
         // Full path with new name
         Path filePath = uploadPath.resolve(newFileName);
-
+        System.out.println("Saved file at: " + filePath.toAbsolutePath());
         // Save file
         multipartFile.transferTo(filePath.toFile());
 
@@ -112,5 +122,22 @@ public class FileService {
             response.put("Error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+    }
+
+    public boolean isDeleted(File file){
+        String uploadDir = System.getProperty("user.dir") + "/" + "uploads";
+        java.io.File dir = new java.io.File(uploadDir);
+        java.io.File[] files = dir.listFiles();
+        if(files!=null){
+            for (java.io.File file1 : files) {
+                // Check if file name starts with ID (since you used ID + extension)
+                if (file1.getName().startsWith(file.getId())) {
+                    boolean deleted = file1.delete();
+                    System.out.println("Deleted file: " + file1.getAbsolutePath());
+                    return deleted;
+                }
+            }
+        }
+        return false;
     }
 }
