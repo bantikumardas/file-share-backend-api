@@ -49,7 +49,7 @@ public class EmailService {
                     + "<ul style='list-style:none;padding:0;'>"
                     + "<li><strong>File Name:</strong> " + file.getFileName() + "</li>"
                     + "<li><strong>File Size:</strong> " + formatFileSize(file.getFileSize()) + "</li>"
-                    + "<li><strong>File Link:</strong> <a href='" + backendURL+"/"+file.getFileUrl() + "' style='color:#007BFF;'>Click to Open</a></li>"
+                    + "<li><strong>File Link:</strong> <a href='" + file.getFileUrl() + "' style='color:#007BFF;'>Click to Open</a></li>"
                     + "</ul>"
                     + "</div>"
 

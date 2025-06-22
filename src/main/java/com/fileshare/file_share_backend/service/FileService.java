@@ -4,11 +4,15 @@ import com.fileshare.file_share_backend.Repositry.FileRepo;
 import com.fileshare.file_share_backend.model.File;
 import com.fileshare.file_share_backend.model.FileWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +29,9 @@ public class FileService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private SupabaseUploader supabaseUploader;
 
 
     public ResponseEntity<?> uploadFile(File file, MultipartFile multipartFile) {
@@ -50,9 +57,10 @@ public class FileService {
                 response.put("error", "Please try again with different/same key");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
-            String url=saveFile(multipartFile, uuid);
+            String url=supabaseUploader.uploadFileToSupabase(multipartFile);
             file.setFileUrl(url);
             System.out.println("The URL Is "+url);
+            file.setIsEmailSend(false);
             if(file.getEmailId()!=null){
                 boolean isEmailSend=emailService.sendEmail(file);
                 if(!isEmailSend){
@@ -70,31 +78,6 @@ public class FileService {
         }
     }
 
-    public String saveFile(MultipartFile multipartFile, String ID) throws IOException {
-        // Generate new file name
-        String originalFileName = multipartFile.getOriginalFilename();
-        String extension = originalFileName != null && originalFileName.contains(".")
-                ? originalFileName.substring(originalFileName.lastIndexOf("."))
-                : "";
-        String newFileName = ID  + extension;
-
-        // Define your local directory path
-        String uploadDir = System.getProperty("user.dir") + "/" + "uploads"; // Make sure this folder exists
-        Path uploadPath = Paths.get(uploadDir);
-
-        // Create directory if not exists
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-
-        // Full path with new name
-        Path filePath = uploadPath.resolve(newFileName);
-        System.out.println("Saved file at: " + filePath.toAbsolutePath());
-        // Save file
-        multipartFile.transferTo(filePath.toFile());
-
-        return filePath.toString(); // Return saved file path
-    }
 
     public ResponseEntity<?> downloadFile(String key, String code) {
         Map<String, String> response=new HashMap<>();
@@ -139,5 +122,19 @@ public class FileService {
             }
         }
         return false;
+    }
+
+    public ResponseEntity<Resource> viewFile(String filename) throws MalformedURLException {
+
+            Path path = Paths.get(System.getProperty("user.dir"), "app", "uploads", filename);
+            Resource resource = new UrlResource(path.toUri());
+            if (!resource.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+
+
     }
 }
